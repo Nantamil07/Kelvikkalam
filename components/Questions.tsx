@@ -1,28 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Question } from "@/lib/seed";
 
 export default function Questions({ initial }: { initial: Question[] }) {
   const [questions, setQuestions] = useState<Question[]>(initial);
   const [body, setBody] = useState("");
-  const [author, setAuthor] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  // On load, pull the server's current list so reloads show what's persisted.
+  useEffect(() => {
+    fetch("/api/questions", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data: Question[]) => setQuestions(data))
+      .catch(() => {});
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = body.trim();
     if (!trimmed) return; // guard against empty body
 
-    const newQuestion: Question = {
-      id: crypto.randomUUID(),
-      body: trimmed,
-      author: author.trim() || "Anonymous",
-    };
-
-    // LOCAL STATE ONLY — no network call. This is what gets lost on refresh.
-    setQuestions((qs) => [newQuestion, ...qs]);
     setBody("");
-    setAuthor("");
+
+    // Send it to the server, then add the saved question to the list.
+    const res = await fetch("/api/questions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body: trimmed, author: "Anonymous" }),
+    });
+    const saved: Question = await res.json();
+    setQuestions((qs) => [saved, ...qs]);
   }
 
   return (
@@ -39,12 +46,6 @@ export default function Questions({ initial }: { initial: Question[] }) {
           className="w-full rounded-lg bg-gray-50 px-4 py-3 outline-none placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-brand/40"
         />
         <div className="mt-3 flex items-center gap-3">
-          <input
-            value={author}
-            onChange={(e) => setAuthor(e.target.value)}
-            placeholder="Your name (optional)"
-            className="flex-1 rounded-lg bg-gray-50 px-4 py-2 text-sm outline-none placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-brand/40"
-          />
           <button
             type="submit"
             disabled={!body.trim()}

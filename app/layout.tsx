@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "LIVE Q&A",
   description: "Ask and upvote questions",
   icons: {
-    icon: "/light-bulb.png"
+    icon: "app/light-bulb.png"
   },
 };
 

@@ -1,14 +1,34 @@
+"use client";
+
+import { useAuth } from "@/lib/auth-context";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import QuestionsList from "./questions-list";
-import { getQuestionsPage } from "@/lib/questions";
 
-// Render on every request (don't cache/prerender) so new questions show up.
-export const dynamic = "force-dynamic";
+export default function HomePage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
-const PAGE_SIZE = 10;
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
 
-// Server component — runs only on the server, awaits the data, renders to HTML.
-export default async function Page() {
-  const { questions, hasMore } = await getQuestionsPage(0, PAGE_SIZE);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-lg">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const questions = []; // Placeholder - will fetch from DB later
+  const hasMore = false;
 
   return (
     <main className="mx-auto w-full max-w-2xl px-5 py-10 sm:py-14">
@@ -17,7 +37,7 @@ export default async function Page() {
           <span className="h-1.5 w-1.5 rounded-full bg-brand" />
           Live now
         </span>
-        <h1 className="text-3xl font-semibold tracking-tight">Live Q&amp;A</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Live Q&A</h1>
         <p className="mt-1.5 text-sm text-muted">
           Ask a question, upvote the ones you want answered.
         </p>

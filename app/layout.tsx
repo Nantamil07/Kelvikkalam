@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Live Q&A",
   description: "Ask and upvote questions",
+  icons: {
+    icon: light-bulb.png
+  },
 };
 
 export default function RootLayout({

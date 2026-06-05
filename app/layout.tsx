@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Live Q&A",
+  title: "LIVE Q&A",
   description: "Ask and upvote questions",
   icons: {
     icon: "/light-bulb.png"

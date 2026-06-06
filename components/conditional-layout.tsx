@@ -1,37 +1,26 @@
 "use client";
 
-import Sidebar from "@/components/sidebar";
-import { useAuth } from "@/lib/auth-context";
+import { usePathname } from "next/navigation";
+import Sidebar from "./sidebar";
 
 export default function ConditionalLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const pathname = usePathname();
 
-  // Wait for auth session
-  if (loading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        Loading...
+  const hideSidebar =
+    pathname === "/login" ||
+    pathname === "/setup-profile";
+
+  return (
+    <div className="flex">
+      {!hideSidebar && <Sidebar />}
+
+      <main className={!hideSidebar ? "md:ml-64 flex-1" : "flex-1"}>
+        {children}
       </main>
-    );
-  }
-
-  // Logged in
-  if (user) {
-    return (
-      <>
-        <Sidebar />
-
-        <main className="md:ml-64">
-          {children}
-        </main>
-      </>
-    );
-  }
-
-  // Logged out
-  return <main>{children}</main>;
+    </div>
+  );
 }

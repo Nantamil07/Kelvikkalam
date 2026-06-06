@@ -36,24 +36,24 @@ export default function Sidebar() {
         `}
       >
         <div className="p-6 flex flex-col h-full">
-          {/* Profile */}
-          <div className="flex items-center gap-3 mb-8">
+          
+          {/* Profile Section */}
+          <div className="flex items-center gap-3 mb-8 min-w-0">
+            
+            {/* Profile Picture */}
             <img
-              src={
-                profile?.avatar_url ||
-                user?.user_metadata?.avatar_url ||
-                "/default-avatar.png"
-              }
+              src={profile?.avatar_url || "/default-avatar.png"}
               alt="profile"
-              className="w-12 h-12 rounded-full"
+              className="w-12 h-12 rounded-full object-cover border flex-shrink-0"
             />
 
-            <div>
-              <p className="font-bold">
-  {profile?.username || user?.email?.split("@")[0] || "User"}
-</p>
+            {/* User Info */}
+            <div className="min-w-0">
+              <p className="font-bold truncate">
+                {profile?.username || "User"}
+              </p>
 
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 truncate max-w-[150px]">
                 {user?.email}
               </p>
             </div>
@@ -61,17 +61,40 @@ export default function Sidebar() {
 
           {/* Navigation */}
           <nav className="flex flex-col gap-4">
-            <Link href="/">🏠 Home</Link>
-            <Link href="/questions">❓ Questions</Link>
-            <Link href="/ask">➕ Ask Question</Link>
-            <Link href="/profile">👤 Profile</Link>
+            <Link
+              href="/"
+              className="hover:bg-gray-100 px-3 py-2 rounded-lg transition"
+            >
+               Home
+            </Link>
+
+            <Link
+              href="/questions"
+              className="hover:bg-gray-100 px-3 py-2 rounded-lg transition"
+            >
+               Questions
+            </Link>
+
+            <Link
+              href="/ask"
+              className="hover:bg-gray-100 px-3 py-2 rounded-lg transition"
+            >
+               Ask Question
+            </Link>
+
+            <Link
+              href="/profile"
+              className="hover:bg-gray-100 px-3 py-2 rounded-lg transition"
+            >
+              👤 Profile
+            </Link>
           </nav>
 
-          {/* Bottom */}
+          {/* Logout Button */}
           <div className="mt-auto">
             <button
               onClick={signOut}
-              className="w-full bg-red-500 text-white py-2 rounded-lg"
+              className="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg transition"
             >
               Logout
             </button>

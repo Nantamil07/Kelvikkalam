@@ -49,9 +49,8 @@ export default function SetupProfile() {
       .eq("id", user.id);
 
     if (!updateError) {
-      router.refresh();
-router.push("/");
-    } else {
+  window.location.href = "/";
+} else {
       setError("Failed to create username. Please try again.");
     }
     setLoading(false);

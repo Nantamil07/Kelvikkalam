@@ -55,11 +55,11 @@ export async function GET(request: NextRequest) {
             : "user";
 
           await supabase.from("profiles").insert({
-            id: user.id,
-            email: user.email,
-            username: `${baseUsername}${Date.now()}`,
-            avatar_url: user.user_metadata?.avatar_url || null,
-          });
+  id: user.id,
+  email: user.email,
+  username: null,
+  avatar_url: user.user_metadata?.avatar_url || null,
+});
         }
       }
 

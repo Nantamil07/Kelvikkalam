@@ -57,8 +57,7 @@ export async function GET(request: NextRequest) {
             id: user.id,
             email: user.email,
             username: null,
-            avatar_url:
-              user.user_metadata?.avatar_url || null,
+            avatar_url: null,
           });
 
           return NextResponse.redirect(

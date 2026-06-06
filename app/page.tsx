@@ -27,7 +27,7 @@ export default function HomePage() {
     return null;
   }
 
-  const questions = []; // Placeholder - will fetch from DB later
+  const questions: any[] = []; // Placeholder - will fetch from DB later
   const hasMore = false;
 
   return (

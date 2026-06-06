@@ -50,8 +50,8 @@ export default function Sidebar() {
 
             <div>
               <p className="font-bold">
-                {profile?.username || "User"}
-              </p>
+  {profile?.username || user?.email?.split("@")[0] || "User"}
+</p>
 
               <p className="text-sm text-gray-500">
                 {user?.email}

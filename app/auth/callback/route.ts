@@ -1,38 +1,71 @@
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
+  const { searchParams, origin } = new URL(request.url);
+
   const code = searchParams.get("code");
   const error = searchParams.get("error");
 
   if (error) {
-    return NextResponse.redirect(new URL("/auth/error", request.url));
+    return NextResponse.redirect(`${origin}/auth/error`);
   }
 
   if (code) {
-    const supabase = createClient(
+    const cookieStore = await cookies();
+
+    const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options);
+            });
+          },
+        },
+      }
     );
 
-    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+    const { error: exchangeError } =
+      await supabase.auth.exchangeCodeForSession(code);
 
     if (!exchangeError) {
-      // Create profile after successful auth
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (user) {
-        await supabase.from("profiles").insert({
-          id: user.id,
-          email: user.email,
-          username: (user.email?.split("@")[0] || "user") + Date.now(),
-        }).select();
+        // Check if profile already exists
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", user.id)
+          .single();
+
+        if (!existingProfile) {
+          const baseUsername = user.email
+            ? user.email.split("@")[0]
+            : "user";
+
+          await supabase.from("profiles").insert({
+            id: user.id,
+            email: user.email,
+            username: `${baseUsername}${Date.now()}`,
+            avatar_url: user.user_metadata?.avatar_url || null,
+          });
+        }
       }
 
-      return NextResponse.redirect(new URL("/setup-profile", request.url));
+      return NextResponse.redirect(`${origin}/setup-profile`);
     }
   }
 
-  return NextResponse.redirect(new URL("/auth/error", request.url));
+  return NextResponse.redirect(`${origin}/auth/error`);
 }

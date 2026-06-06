@@ -34,12 +34,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>{children}</AuthProvider>
-        <AuthProvider>
-  <Sidebar />
-
-  <main className="md:ml-64">
+       <AuthProvider>
+  <ConditionalLayout>
     {children}
-  </main>
+  </ConditionalLayout>
 </AuthProvider>
       </body>
     </html>

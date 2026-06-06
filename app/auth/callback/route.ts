@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
         await supabase.from("profiles").insert({
           id: user.id,
           email: user.email,
-          username: user.email?.split("@")[0] + Date.now(),
+          username: (user.email?.split("@")[0] || "user") + Date.now(),
         }).select();
       }
 

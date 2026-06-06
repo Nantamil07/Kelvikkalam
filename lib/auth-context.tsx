@@ -48,13 +48,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("username, avatar_url")
-      .eq("id", userId)
-      .single();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("username, avatar_url")
+    .eq("id", userId)
+    .single();
+
+  if (!error && data) {
     setProfile(data);
-  };
+  }
+};
 
   const signInWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({

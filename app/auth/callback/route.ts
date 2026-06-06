@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const error = searchParams.get("error");
 
+  // OAuth error
   if (error) {
     return NextResponse.redirect(`${origin}/auth/error`);
   }
@@ -33,6 +34,7 @@ export async function GET(request: NextRequest) {
       }
     );
 
+    // Exchange OAuth code for session
     const { error: exchangeError } =
       await supabase.auth.exchangeCodeForSession(code);
 
@@ -45,25 +47,35 @@ export async function GET(request: NextRequest) {
         // Check if profile already exists
         const { data: existingProfile } = await supabase
           .from("profiles")
-          .select("id")
+          .select("username")
           .eq("id", user.id)
           .single();
 
+        // First time user → create empty profile row
         if (!existingProfile) {
-          const baseUsername = user.email
-            ? user.email.split("@")[0]
-            : "user";
-
           await supabase.from("profiles").insert({
-  id: user.id,
-  email: user.email,
-  username: null,
-  avatar_url: user.user_metadata?.avatar_url || null,
-});
-        }
-      }
+            id: user.id,
+            email: user.email,
+            username: null,
+            avatar_url:
+              user.user_metadata?.avatar_url || null,
+          });
 
-      return NextResponse.redirect(`${origin}/setup-profile`);
+          return NextResponse.redirect(
+            `${origin}/setup-profile`
+          );
+        }
+
+        // Existing user but no username yet
+        if (!existingProfile.username) {
+          return NextResponse.redirect(
+            `${origin}/setup-profile`
+          );
+        }
+
+        // Existing user with username
+        return NextResponse.redirect(origin);
+      }
     }
   }
 

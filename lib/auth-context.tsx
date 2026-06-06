@@ -55,7 +55,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     .single();
 
   if (!error && data) {
-    setProfile(data);
+    setProfile({
+      username: data.username,
+      avatar_url: data.avatar_url,
+    });
   }
 };
 

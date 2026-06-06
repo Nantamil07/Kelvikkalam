@@ -8,9 +8,18 @@ export default function ConditionalLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
-  // If logged in → show sidebar
+  // Wait for auth session
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        Loading...
+      </main>
+    );
+  }
+
+  // Logged in
   if (user) {
     return (
       <>
@@ -23,6 +32,6 @@ export default function ConditionalLayout({
     );
   }
 
-  // If logged out → no sidebar
+  // Logged out
   return <main>{children}</main>;
 }

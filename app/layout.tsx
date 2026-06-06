@@ -1,45 +1,27 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
-import Sidebar from "@/components/sidebar";
+
+import { AuthProvider } from "@/lib/auth-context";
 import ConditionalLayout from "@/components/conditional-layout";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "LIVE Q&A",
-  description: "Ask and upvote questions",
-  icons: {
-    icon: "/favicon.ico"
-  },
+  title: "Live Q&A",
+  description: "Ask questions and upvote answers",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <AuthProvider>{children}</AuthProvider>
-       <AuthProvider>
-  <ConditionalLayout>
-    {children}
-  </ConditionalLayout>
-</AuthProvider>
+    <html lang="en">
+      <body>
+        <AuthProvider>
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
+        </AuthProvider>
       </body>
     </html>
   );

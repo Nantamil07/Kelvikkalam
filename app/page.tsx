@@ -161,13 +161,13 @@ export default function HomePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="max-w-2xl mx-auto p-4">
       {/* Header */}
-      <h1 className="text-4xl font-bold mb-2">
+      <h1 className="text-3xl font-bold mb-2">
         Live Q&A
       </h1>
 
-      <p className="text-gray-600 mb-6">
+      <p className="text-gray-600 mb-6 text-sm">
         Ask a question, upvote the ones you want answered.
       </p>
 
@@ -178,13 +178,13 @@ export default function HomePage() {
           placeholder="Ask a question..."
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          className="flex-1 border rounded-lg px-4 py-3"
+          className="flex-1 border rounded-lg px-4 py-2 text-sm"
         />
 
         <button
           onClick={handleAskQuestion}
           disabled={posting}
-          className="bg-blue-600 text-white px-6 rounded-lg hover:bg-blue-700"
+          className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 text-sm"
         >
           {posting ? "Posting..." : "Ask"}
         </button>
@@ -198,41 +198,41 @@ export default function HomePage() {
       )}
 
       {/* Questions */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {questions.length === 0 ? (
-          <div className="text-gray-500">
+          <div className="text-gray-500 text-sm">
             No questions yet — be the first to ask.
           </div>
         ) : (
           questions.map((q) => (
             <div
               key={q.id}
-              className="border rounded-lg p-3 bg-white shadow-sm flex gap-3 items-start"
+              className="border rounded-lg px-3 py-2 bg-white shadow-sm flex gap-2 items-start"
             >
-              {/* Vote Box */}
-              <div className="flex flex-col items-center border rounded-md px-2 py-1 h-fit min-w-[42px]">
+              {/* Small Vote Box */}
+              <div className="flex flex-col items-center border rounded px-1 py-1 h-fit w-8 shrink-0">
                 <button
                   onClick={() => handleVote(q.id, 1)}
-                  className="text-sm hover:text-blue-600 leading-none"
+                  className="text-[10px] hover:text-blue-600 leading-none"
                 >
                   ▲
                 </button>
 
-                <span className="text-sm font-bold my-1">
+                <span className="text-xs font-bold my-0.5">
                   {Math.max(votes[q.id] || 0, 0)}
                 </span>
 
                 <button
                   onClick={() => handleVote(q.id, -1)}
-                  className="text-sm hover:text-red-600 leading-none"
+                  className="text-[10px] hover:text-red-600 leading-none"
                 >
                   ▼
                 </button>
               </div>
 
               {/* Question */}
-              <div className="flex-1 max-h-14 overflow-y-auto">
-                <p className="font-medium text-sm leading-5 break-words">
+              <div className="flex-1 max-h-12 overflow-y-auto">
+                <p className="text-sm leading-5 break-words">
                   {q.question}
                 </p>
               </div>

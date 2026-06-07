@@ -21,7 +21,6 @@ export default function HomePage() {
   const [votes, setVotes] = useState<Record<string, number>>({});
   const [posting, setPosting] = useState(false);
   const [message, setMessage] = useState("");
-  const [improving, setImproving] = useState(false);
 
   // Redirect if not logged in
   useEffect(() => {

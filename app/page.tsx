@@ -69,43 +69,69 @@ export default function HomePage() {
 
   // Ask question
   const handleAskQuestion = async () => {
-    if (!question.trim()) return;
+  if (!question.trim()) return;
 
-    setPosting(true);
-    setMessage("");
+  setPosting(true);
+  setMessage("");
 
-    // Duplicate check
-    const { data: existingQuestion } = await supabase
-      .from("questions")
-      .select("id")
-      .eq("question", question.trim())
-      .maybeSingle();
-
-    if (existingQuestion) {
-      setMessage("Question already exists.");
-      setPosting(false);
-      return;
+  // AI validation + improvement
+  const aiResponse = await fetch(
+    "/api/improve-question",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        text: question,
+      }),
     }
+  );
 
-    // Insert question
-    const { error } = await supabase
-      .from("questions")
-      .insert([
-        {
-          question: question.trim(),
-          user_id: user?.id,
-        },
-      ]);
+  const aiData = await aiResponse.json();
 
-    if (error) {
-      setMessage(error.message);
-    } else {
-      setQuestion("");
-      fetchQuestions();
-    }
-
+  // Invalid question
+  if (!aiData.valid) {
+    setMessage(aiData.message || "Invalid question");
     setPosting(false);
-  };
+    return;
+  }
+
+  // Improved question
+  const improvedQuestion = aiData.question;
+
+  // Duplicate check
+  const { data: existingQuestion } = await supabase
+    .from("questions")
+    .select("id")
+    .eq("question", improvedQuestion)
+    .maybeSingle();
+
+  if (existingQuestion) {
+    setMessage("Question already exists.");
+    setPosting(false);
+    return;
+  }
+
+  // Insert question
+  const { error } = await supabase
+    .from("questions")
+    .insert([
+      {
+        question: improvedQuestion,
+        user_id: user?.id,
+      },
+    ]);
+
+  if (error) {
+    setMessage(error.message);
+  } else {
+    setQuestion("");
+    fetchQuestions();
+  }
+
+  setPosting(false);
+};
 
   // Vote handler
   const handleVote = async (

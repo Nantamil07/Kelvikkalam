@@ -7,53 +7,50 @@ export async function POST(req: Request) {
 
     const text = body.text;
 
-    // Basic validation
     if (!text || text.trim().length < 3) {
       return NextResponse.json({
         success: false,
-        error: "Question is too short",
+        error: "Question too short",
       });
     }
 
-    // Gemini setup
+    // CHECK ENV VARIABLE
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json({
+        success: false,
+        error: "Missing GEMINI_API_KEY",
+      });
+    }
+
     const genAI = new GoogleGenerativeAI(
-      process.env.GEMINI_API_KEY!
+      process.env.GEMINI_API_KEY
     );
 
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
     });
 
-    // AI prompt
-    const result = await model.generateContent(`
-You are an AI assistant for a Q&A website.
+    const prompt = `
+Convert this into a proper grammatically correct question.
 
-Your tasks:
-1. Correct grammar
-2. Convert text into a proper question
-3. Keep the meaning same
-4. Reject only COMPLETE nonsense/spam/random letters
+Reject only nonsense/random letters/spam.
 
-IMPORTANT:
-- Most user inputs are valid
-- Do NOT reject short technical questions
-- Do NOT reject programming questions
-- Do NOT reject imperfect grammar
-
-If invalid, return ONLY:
+If invalid return ONLY:
 INVALID
 
-If valid, return ONLY the improved question.
+Otherwise return ONLY the corrected question.
 
 Input:
 ${text}
-`);
+`;
 
-    const response = result.response
-      .text()
-      .trim();
+    const result = await model.generateContent(
+      prompt
+    );
 
-    // Invalid question
+    const response =
+      result.response.text().trim();
+
     if (response === "INVALID") {
       return NextResponse.json({
         success: false,
@@ -61,18 +58,19 @@ ${text}
       });
     }
 
-    // Valid improved question
     return NextResponse.json({
       success: true,
       question: response,
     });
-
-  } catch (err: any) {
-    console.error(err);
+  } catch (error: any) {
+    console.error("FULL ERROR:", error);
 
     return NextResponse.json({
       success: false,
-      error: "Server error",
+      error:
+        error?.message ||
+        JSON.stringify(error) ||
+        "Unknown server error",
     });
   }
 }

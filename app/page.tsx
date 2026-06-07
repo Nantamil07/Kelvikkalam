@@ -68,6 +68,37 @@ export default function HomePage() {
     }
   };
 
+  const improveQuestion = async () => {
+  if (!question.trim()) return;
+
+  setImproving(true);
+
+  try {
+    const response = await fetch(
+      "/api/improve-question",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: question,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.question) {
+      setQuestion(data.question);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+
+  setImproving(false);
+};
+
   // Ask question
   const handleAskQuestion = async () => {
     if (!question.trim()) return;

@@ -14,44 +14,28 @@ export async function POST(req: Request) {
       });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!apiKey) {
       return NextResponse.json({
         success: false,
-        error: "Missing GEMINI_API_KEY",
+        error: "Missing API key",
       });
     }
 
-    const genAI = new GoogleGenerativeAI(
-      process.env.GEMINI_API_KEY
-    );
+    const genAI = new GoogleGenerativeAI(apiKey);
 
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
     });
 
-    const prompt = `
-You are an AI assistant for a Q&A website.
-
-Tasks:
-1. Correct grammar
-2. Convert text into a proper question
-3. Keep same meaning
-4. Reject only nonsense spam or random letters
-
-Rules:
-- Most inputs are valid
-- Do not reject technical questions
-- Do not reject short questions
-- Do not reject bad grammar
-
-If invalid return only:
-INVALID
-
-If valid return only the corrected question.
-
-Input:
-${text}
-`;
+    const prompt =
+      "Convert this into a proper grammatically correct question. " +
+      "Reject only nonsense or spam. " +
+      "If invalid return only INVALID. " +
+      "Otherwise return only the corrected question. " +
+      "Input: " +
+      text;
 
     const result =
       await model.generateContent(prompt);
@@ -76,8 +60,7 @@ ${text}
     return NextResponse.json({
       success: false,
       error:
-        error?.message ||
-        "Unknown server error",
+        error.message || "Server error",
     });
   }
 }

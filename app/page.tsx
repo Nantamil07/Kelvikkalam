@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 
@@ -10,16 +12,27 @@ interface Question {
 }
 
 export default function HomePage() {
-  const { user } = useAuth();
+  const router = useRouter();
+
+  const { user, loading } = useAuth();
 
   const [question, setQuestion] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [posting, setPosting] = useState(false);
   const [message, setMessage] = useState("");
 
+  // Redirect if not logged in
   useEffect(() => {
-    fetchQuestions();
-  }, []);
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
+
+  useEffect(() => {
+    if (user) {
+      fetchQuestions();
+    }
+  }, [user]);
 
   const fetchQuestions = async () => {
     const { data, error } = await supabase
@@ -27,12 +40,7 @@ export default function HomePage() {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) {
-      console.log("Fetch Error:", error);
-      return;
-    }
-
-    if (data) {
+    if (!error && data) {
       setQuestions(data);
     }
   };
@@ -45,46 +53,52 @@ export default function HomePage() {
       return;
     }
 
-    setLoading(true);
+    setPosting(true);
     setMessage("");
 
     // Check duplicate
-    const { data: duplicate } = await supabase
+    const { data: existingQuestion } = await supabase
       .from("questions")
       .select("id")
       .eq("question", question.trim())
       .maybeSingle();
 
-    if (duplicate) {
+    if (existingQuestion) {
       setMessage("Question already exists.");
-      setLoading(false);
+      setPosting(false);
       return;
     }
 
     // Insert question
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("questions")
       .insert([
         {
           question: question.trim(),
           user_id: user.id,
         },
-      ])
-      .select();
-
-    console.log("Inserted:", data);
-    console.log("Insert Error:", error);
+      ]);
 
     if (error) {
+      console.log(error);
       setMessage(error.message);
     } else {
-      setMessage("Question posted successfully.");
       setQuestion("");
+      setMessage("Question posted successfully.");
       fetchQuestions();
     }
 
-    setLoading(false);
+    setPosting(false);
   };
+
+  // Loading screen
+  if (loading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto p-6">
@@ -96,7 +110,7 @@ export default function HomePage() {
         Ask a question, upvote the ones you want answered.
       </p>
 
-      {/* Ask Box */}
+      {/* Ask Question */}
       <div className="flex gap-2 mb-4">
         <input
           type="text"
@@ -108,16 +122,16 @@ export default function HomePage() {
 
         <button
           onClick={handleAskQuestion}
-          disabled={loading}
+          disabled={posting}
           className="bg-blue-600 text-white px-6 rounded-lg hover:bg-blue-700"
         >
-          {loading ? "Posting..." : "Ask"}
+          {posting ? "Posting..." : "Ask"}
         </button>
       </div>
 
-      {/* Message */}
+      {/* Status Message */}
       {message && (
-        <div className="mb-4 text-sm font-medium text-red-500">
+        <div className="mb-4 text-sm text-red-500">
           {message}
         </div>
       )}
@@ -134,9 +148,7 @@ export default function HomePage() {
               key={q.id}
               className="border rounded-xl p-4 bg-white shadow-sm"
             >
-              <p className="font-medium">
-                {q.question}
-              </p>
+              {q.question}
             </div>
           ))
         )}

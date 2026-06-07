@@ -213,14 +213,6 @@ export default function HomePage() {
   />
 
   <button
-    onClick={improveQuestion}
-    disabled={improving || !question.trim()}
-    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 text-sm"
-  >
-    {improving ? "..." : "AI"}
-  </button>
-
-  <button
     onClick={handleAskQuestion}
     disabled={posting}
     className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 text-sm"

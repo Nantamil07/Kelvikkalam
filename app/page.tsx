@@ -101,34 +101,36 @@ export default function HomePage() {
   };
 
   const handleVote = async (
-    questionId: string,
-    value: number
-  ) => {
-    if (!user) return;
+  questionId: string,
+  value: number
+) => {
+  if (!user) return;
 
-    const { data: existingVote } = await supabase
-      .from("question_votes")
-      .select("*")
-      .eq("question_id", questionId)
-      .eq("user_id", user.id)
-      .maybeSingle();
+  const { data: existingVote } = await supabase
+    .from("question_votes")
+    .select("*")
+    .eq("question_id", questionId)
+    .eq("user_id", user.id)
+    .maybeSingle();
 
-    // No vote yet
-    if (!existingVote) {
-      await supabase.from("question_votes").insert([
-        {
-          question_id: questionId,
-          user_id: user.id,
-          vote: value,
-        },
-      ]);
+  // No existing vote
+  if (!existingVote) {
+    await supabase.from("question_votes").insert([
+      {
+        question_id: questionId,
+        user_id: user.id,
+        vote: value,
+      },
+    ]);
+  } else {
+    // Clicking same vote again removes vote
+    if (existingVote.vote === value) {
+      await supabase
+        .from("question_votes")
+        .delete()
+        .eq("id", existingVote.id);
     } else {
-      // Same vote clicked again → ignore
-      if (existingVote.vote === value) {
-        return;
-      }
-
-      // Change vote
+      // Switch vote
       await supabase
         .from("question_votes")
         .update({
@@ -136,9 +138,10 @@ export default function HomePage() {
         })
         .eq("id", existingVote.id);
     }
+  }
 
-    fetchVotes();
-  };
+  fetchVotes();
+};
 
   if (loading || !user) {
     return (

@@ -6,7 +6,7 @@ export async function POST(req: Request) {
 
     const text = body.text;
 
-    // Empty check
+    // Short check
     if (!text || text.trim().length < 3) {
       return NextResponse.json({
         success: false,
@@ -23,14 +23,13 @@ export async function POST(req: Request) {
       });
     }
 
-    // Gemini REST API
+    // Gemini API request
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: {
-          "Content-Type":
-            "application/json",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           contents: [
@@ -38,10 +37,10 @@ export async function POST(req: Request) {
               parts: [
                 {
                   text:
-                    "Improve this text into a proper clear grammatically correct question. " +
-                    "Reject only meaningless spam. " +
+                    "Convert this into a proper grammatically correct question. " +
+                    "Reject only nonsense spam. " +
                     "If invalid return only INVALID. " +
-                    "Question: " +
+                    "Input: " +
                     text,
                 },
               ],
@@ -53,21 +52,24 @@ export async function POST(req: Request) {
 
     const data = await response.json();
 
+    console.log("Gemini Response:", data);
+
+    // Safe extraction
     const improvedQuestion =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      null;
 
     if (!improvedQuestion) {
       return NextResponse.json({
         success: false,
-        error: "AI failed to process question",
+        error: "Gemini returned empty response",
       });
     }
 
     // Invalid
     if (
-      improvedQuestion
-        .trim()
-        .toUpperCase() === "INVALID"
+      improvedQuestion.trim().toUpperCase() ===
+      "INVALID"
     ) {
       return NextResponse.json({
         success: false,
@@ -77,8 +79,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      question:
-        improvedQuestion.trim(),
+      question: improvedQuestion.trim(),
     });
 
   } catch (error: any) {
@@ -87,8 +88,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: false,
       error:
-        error.message ||
-        "Server error",
+        error.message || "Server error",
     });
   }
 }

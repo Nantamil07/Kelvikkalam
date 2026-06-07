@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-
     const text = body.text;
 
     if (!text || text.trim().length < 3) {
@@ -13,36 +12,23 @@ export async function POST(req: Request) {
       });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    if (!apiKey) {
-      return NextResponse.json({
-        success: false,
-        error: "Missing API key",
-      });
-    }
-
     const response = await fetch(
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
-    apiKey,
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization:
+            `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          contents: [
+          model: "openai/gpt-3.5-turbo",
+          messages: [
             {
-              parts: [
-                {
-                  text:
-                    "Convert this into a proper grammatically correct question. " +
-                    "Reject only meaningless spam. " +
-                    "If invalid return only INVALID. " +
-                    "Input: " +
-                    text,
-                },
-              ],
+              role: "user",
+              content:
+                "Convert this into a proper grammatically correct question. Reject nonsense spam. If invalid return only INVALID. Input: " +
+                text,
             },
           ],
         }),
@@ -51,24 +37,19 @@ export async function POST(req: Request) {
 
     const data = await response.json();
 
-    console.log(data);
+    const improved =
+      data?.choices?.[0]?.message?.content;
 
-    // SHOW RAW RESPONSE
-    if (!data.candidates) {
+    if (!improved) {
       return NextResponse.json({
         success: false,
-        error:
-          JSON.stringify(data),
+        error: "AI failed",
       });
     }
 
-    const improvedQuestion =
-      data.candidates[0].content.parts[0].text;
-
     if (
-      improvedQuestion
-        .trim()
-        .toUpperCase() === "INVALID"
+      improved.trim().toUpperCase() ===
+      "INVALID"
     ) {
       return NextResponse.json({
         success: false,
@@ -78,17 +59,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      question: improvedQuestion,
+      question: improved.trim(),
     });
 
   } catch (error: any) {
-    console.error(error);
-
     return NextResponse.json({
       success: false,
-      error:
-        error.message ||
-        "Server error",
+      error: error.message,
     });
   }
 }

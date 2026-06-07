@@ -205,22 +205,30 @@ export default function HomePage() {
 
       {/* Ask Question */}
       <div className="flex gap-2 mb-4">
-        <input
-          type="text"
-          placeholder="Ask a question..."
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          className="flex-1 border rounded-lg px-4 py-2 text-sm"
-        />
+  <input
+    type="text"
+    placeholder="Ask a question..."
+    value={question}
+    onChange={(e) => setQuestion(e.target.value)}
+    className="flex-1 border rounded-lg px-4 py-2 text-sm"
+  />
 
-        <button
-          onClick={handleAskQuestion}
-          disabled={posting}
-          className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 text-sm"
-        >
-          {posting ? "Posting..." : "Ask"}
-        </button>
-      </div>
+  <button
+    onClick={improveQuestion}
+    disabled={improving || !question.trim()}
+    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 text-sm"
+  >
+    {improving ? "..." : "AI"}
+  </button>
+
+  <button
+    onClick={handleAskQuestion}
+    disabled={posting}
+    className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 text-sm"
+  >
+    {posting ? "Posting..." : "Ask"}
+  </button>
+</div>
 
       {/* Message */}
       {message && (

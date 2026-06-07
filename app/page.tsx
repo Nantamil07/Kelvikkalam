@@ -187,13 +187,12 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Questions */}
-      <div className="space-y-4">
-        {questions.map((q) => (
-          <div
-            key={q.id}
-            className="border rounded-xl p-4 bg-white shadow-sm flex gap-4"
-          >
+      {/* Question */}
+<div className="flex-1 max-h-14 overflow-y-auto">
+  <p className="font-medium text-sm leading-5 break-words">
+    {q.question}
+  </p>
+</div>
             {/* Vote Box */}
 <div className="flex flex-col items-center border rounded-md px-2 py-1 h-fit min-w-[42px]">
   <button

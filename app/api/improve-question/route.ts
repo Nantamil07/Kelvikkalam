@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function POST(req: Request) {
   try {
@@ -7,6 +6,7 @@ export async function POST(req: Request) {
 
     const text = body.text;
 
+    // Empty check
     if (!text || text.trim().length < 3) {
       return NextResponse.json({
         success: false,
@@ -14,53 +14,54 @@ export async function POST(req: Request) {
       });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    // Remove extra spaces
+    const cleaned = text.trim();
 
-    if (!apiKey) {
-      return NextResponse.json({
-        success: false,
-        error: "Missing API key",
-      });
-    }
+    // Reject meaningless spam
+    const invalidPatterns = [
+      /^[a-zA-Z]{1,2}$/,
+      /^(.)\1+$/,
+      /^[0-9]+$/,
+    ];
 
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const isInvalid =
+      invalidPatterns.some((pattern) =>
+        pattern.test(cleaned)
+      );
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-    });
-
-    const prompt =
-      "Convert this into a proper grammatically correct question. " +
-      "Reject only nonsense or spam. " +
-      "If invalid return only INVALID. " +
-      "Otherwise return only the corrected question. " +
-      "Input: " +
-      text;
-
-    const result =
-      await model.generateContent(prompt);
-
-    const response =
-      result.response.text().trim();
-
-    if (response === "INVALID") {
+    if (isInvalid) {
       return NextResponse.json({
         success: false,
         error: "Invalid question",
       });
     }
 
+    // Auto convert to question
+    let improvedQuestion = cleaned;
+
+    // Capitalize first letter
+    improvedQuestion =
+      improvedQuestion.charAt(0).toUpperCase() +
+      improvedQuestion.slice(1);
+
+    // Add question mark if missing
+    if (
+      !improvedQuestion.endsWith("?")
+    ) {
+      improvedQuestion += "?";
+    }
+
     return NextResponse.json({
       success: true,
-      question: response,
+      question: improvedQuestion,
     });
+
   } catch (error: any) {
     console.error(error);
 
     return NextResponse.json({
       success: false,
-      error:
-        error.message || "Server error",
+      error: "Server error",
     });
   }
 }

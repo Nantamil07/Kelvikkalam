@@ -195,25 +195,25 @@ export default function HomePage() {
             className="border rounded-xl p-4 bg-white shadow-sm flex gap-4"
           >
             {/* Vote Box */}
-            <div className="flex flex-col items-center border rounded-lg px-3 py-2 min-w-[60px]">
-              <button
-                onClick={() => handleVote(q.id, 1)}
-                className="text-xl hover:text-blue-600"
-              >
-                ▲
-              </button>
+<div className="flex flex-col items-center border rounded-md px-2 py-1 h-fit min-w-[42px]">
+  <button
+    onClick={() => handleVote(q.id, 1)}
+    className="text-sm hover:text-blue-600 leading-none"
+  >
+    ▲
+  </button>
 
-              <span className="font-bold">
-                {votes[q.id] || 0}
-              </span>
+  <span className="text-sm font-bold my-1">
+    {Math.max(votes[q.id] || 0, 0)}
+  </span>
 
-              <button
-                onClick={() => handleVote(q.id, -1)}
-                className="text-xl hover:text-red-600"
-              >
-                ▼
-              </button>
-            </div>
+  <button
+    onClick={() => handleVote(q.id, -1)}
+    className="text-sm hover:text-red-600 leading-none"
+  >
+    ▼
+  </button>
+</div>
 
             {/* Question */}
             <div className="flex-1">

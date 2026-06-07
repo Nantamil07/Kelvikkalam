@@ -1,13 +1,18 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 
-const genAI = new GoogleGenerativeAI(
-  process.env.GEMINI_API_KEY!
-);
+const apiKey = process.env.GEMINI_API_KEY;
+
+if (!apiKey) {
+  throw new Error("Missing GEMINI_API_KEY");
+}
+
+const genAI = new GoogleGenerativeAI(apiKey);
 
 export async function POST(request: NextRequest) {
   try {
-    const { text } = await request.json();
+    const body = await request.json();
+    const text = body.text;
 
     if (!text || text.trim().length < 3) {
       return NextResponse.json({
@@ -21,63 +26,53 @@ export async function POST(request: NextRequest) {
     });
 
     const prompt = `
-You are a strict moderator for a Q&A platform.
+You are an AI moderator for a Q&A website.
 
-TASKS:
-1. Correct grammar
-2. Convert text into a proper question
-3. Reject meaningless input
-4. Reject spam
-5. Reject random characters
-6. Reject statements that are not questions
+RULES:
+- Fix grammar
+- Convert into proper question
+- Reject meaningless text
+- Reject spam
+- Reject random letters
+- Reject non-question messages
 
-Return ONLY valid JSON.
+Return ONLY JSON.
 
-VALID FORMAT:
-{
-  "valid": true,
-  "question": "Improved question here"
-}
+VALID:
+{"valid": true, "question": "Improved question"}
 
-INVALID FORMAT:
-{
-  "valid": false,
-  "message": "Reason here"
-}
+INVALID:
+{"valid": false, "message": "Invalid question"}
 
-INVALID examples:
-- "asdfgh"
-- "hi"
-- "hello"
-- "test"
-- "aaaa"
-- "........."
-- random spam
-
-User Input:
-"${text}"
+Input:
+${text}
 `;
 
     const result = await model.generateContent(prompt);
 
-    const response = result.response
-      .text()
+    const rawText = result.response.text();
+
+    console.log("Gemini Response:", rawText);
+
+    const cleaned = rawText
       .replace(/```json/g, "")
       .replace(/```/g, "")
       .trim();
 
-    try {
-      const parsed = JSON.parse(response);
+    let parsed;
 
-      return NextResponse.json(parsed);
+    try {
+      parsed = JSON.parse(cleaned);
     } catch {
       return NextResponse.json({
         valid: false,
-        message: "Failed to process question",
+        message: "AI returned invalid response",
       });
     }
+
+    return NextResponse.json(parsed);
   } catch (error) {
-    console.error(error);
+    console.error("Gemini API Error:", error);
 
     return NextResponse.json({
       valid: false,

@@ -14,7 +14,6 @@ export async function POST(req: Request) {
       });
     }
 
-    // CHECK ENV VARIABLE
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json({
         success: false,
@@ -31,22 +30,31 @@ export async function POST(req: Request) {
     });
 
     const prompt = `
-Convert this into a proper grammatically correct question.
+You are an AI assistant for a Q&A website.
 
-Reject only nonsense/random letters/spam.
+Tasks:
+1. Correct grammar
+2. Convert text into a proper question
+3. Keep same meaning
+4. Reject only nonsense spam or random letters
 
-If invalid return ONLY:
+Rules:
+- Most inputs are valid
+- Do not reject technical questions
+- Do not reject short questions
+- Do not reject bad grammar
+
+If invalid return only:
 INVALID
 
-Otherwise return ONLY the corrected question.
+If valid return only the corrected question.
 
 Input:
 ${text}
 `;
 
-    const result = await model.generateContent(
-      prompt
-    );
+    const result =
+      await model.generateContent(prompt);
 
     const response =
       result.response.text().trim();
@@ -63,13 +71,12 @@ ${text}
       question: response,
     });
   } catch (error: any) {
-    console.error("FULL ERROR:", error);
+    console.error(error);
 
     return NextResponse.json({
       success: false,
       error:
         error?.message ||
-        JSON.stringify(error) ||
         "Unknown server error",
     });
   }

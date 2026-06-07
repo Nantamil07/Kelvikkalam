@@ -14,46 +14,71 @@ export async function POST(req: Request) {
       });
     }
 
-    // Remove extra spaces
-    const cleaned = text.trim();
+    const apiKey = process.env.GEMINI_API_KEY;
 
-    // Reject meaningless spam
-    const invalidPatterns = [
-      /^[a-zA-Z]{1,2}$/,
-      /^(.)\1+$/,
-      /^[0-9]+$/,
-    ];
+    if (!apiKey) {
+      return NextResponse.json({
+        success: false,
+        error: "Missing Gemini API key",
+      });
+    }
 
-    const isInvalid =
-      invalidPatterns.some((pattern) =>
-        pattern.test(cleaned)
-      );
+    // Gemini REST API
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text:
+                    "Improve this text into a proper clear grammatically correct question. " +
+                    "Reject only meaningless spam. " +
+                    "If invalid return only INVALID. " +
+                    "Question: " +
+                    text,
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    );
 
-    if (isInvalid) {
+    const data = await response.json();
+
+    const improvedQuestion =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!improvedQuestion) {
+      return NextResponse.json({
+        success: false,
+        error: "AI failed to process question",
+      });
+    }
+
+    // Invalid
+    if (
+      improvedQuestion
+        .trim()
+        .toUpperCase() === "INVALID"
+    ) {
       return NextResponse.json({
         success: false,
         error: "Invalid question",
       });
     }
 
-    // Auto convert to question
-    let improvedQuestion = cleaned;
-
-    // Capitalize first letter
-    improvedQuestion =
-      improvedQuestion.charAt(0).toUpperCase() +
-      improvedQuestion.slice(1);
-
-    // Add question mark if missing
-    if (
-      !improvedQuestion.endsWith("?")
-    ) {
-      improvedQuestion += "?";
-    }
-
     return NextResponse.json({
       success: true,
-      question: improvedQuestion,
+      question:
+        improvedQuestion.trim(),
     });
 
   } catch (error: any) {
@@ -61,7 +86,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: false,
-      error: "Server error",
+      error:
+        error.message ||
+        "Server error",
     });
   }
 }

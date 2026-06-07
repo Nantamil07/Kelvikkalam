@@ -6,7 +6,6 @@ export async function POST(req: Request) {
 
     const text = body.text;
 
-    // Short check
     if (!text || text.trim().length < 3) {
       return NextResponse.json({
         success: false,
@@ -19,13 +18,13 @@ export async function POST(req: Request) {
     if (!apiKey) {
       return NextResponse.json({
         success: false,
-        error: "Missing Gemini API key",
+        error: "Missing API key",
       });
     }
 
-    // Gemini API request
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=" +
+        apiKey,
       {
         method: "POST",
         headers: {
@@ -38,7 +37,7 @@ export async function POST(req: Request) {
                 {
                   text:
                     "Convert this into a proper grammatically correct question. " +
-                    "Reject only nonsense spam. " +
+                    "Reject only meaningless spam. " +
                     "If invalid return only INVALID. " +
                     "Input: " +
                     text,
@@ -52,24 +51,24 @@ export async function POST(req: Request) {
 
     const data = await response.json();
 
-    console.log("Gemini Response:", data);
+    console.log(data);
 
-    // Safe extraction
-    const improvedQuestion =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      null;
-
-    if (!improvedQuestion) {
+    // SHOW RAW RESPONSE
+    if (!data.candidates) {
       return NextResponse.json({
         success: false,
-        error: "Gemini returned empty response",
+        error:
+          JSON.stringify(data),
       });
     }
 
-    // Invalid
+    const improvedQuestion =
+      data.candidates[0].content.parts[0].text;
+
     if (
-      improvedQuestion.trim().toUpperCase() ===
-      "INVALID"
+      improvedQuestion
+        .trim()
+        .toUpperCase() === "INVALID"
     ) {
       return NextResponse.json({
         success: false,
@@ -79,7 +78,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      question: improvedQuestion.trim(),
+      question: improvedQuestion,
     });
 
   } catch (error: any) {
@@ -88,7 +87,8 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: false,
       error:
-        error.message || "Server error",
+        error.message ||
+        "Server error",
     });
   }
 }

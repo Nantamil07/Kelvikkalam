@@ -99,6 +99,7 @@ export default function HomePage() {
           aiData.error ||
             "Invalid question"
         );
+
         setPosting(false);
         return;
       }
@@ -120,6 +121,7 @@ export default function HomePage() {
         setMessage(
           "Question already exists."
         );
+
         setPosting(false);
         return;
       }
@@ -141,6 +143,7 @@ export default function HomePage() {
         setQuestion("");
         fetchQuestions();
       }
+
     } catch (error) {
       console.error(error);
 
@@ -257,7 +260,7 @@ export default function HomePage() {
       <div className="space-y-3">
         {questions.length === 0 ? (
           <div className="text-gray-500">
-            No questions yet — be the
+            No questions yet - be the
             first to ask.
           </div>
         ) : (
@@ -274,7 +277,7 @@ export default function HomePage() {
                   }
                   className="text-xs leading-none hover:text-blue-600"
                 >
-                  ▲
+                  ^
                 </button>
 
                 <span className="text-xs font-bold my-1">
@@ -290,7 +293,7 @@ export default function HomePage() {
                   }
                   className="text-xs leading-none hover:text-red-600"
                 >
-                  ▼
+                  v
                 </button>
               </div>
 

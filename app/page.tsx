@@ -22,12 +22,14 @@ export default function HomePage() {
   const [posting, setPosting] = useState(false);
   const [message, setMessage] = useState("");
 
+  // Redirect if not logged in
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
     }
   }, [user, loading, router]);
 
+  // Fetch data
   useEffect(() => {
     if (user) {
       fetchQuestions();
@@ -35,6 +37,7 @@ export default function HomePage() {
     }
   }, [user]);
 
+  // Fetch questions
   const fetchQuestions = async () => {
     const { data } = await supabase
       .from("questions")
@@ -46,6 +49,7 @@ export default function HomePage() {
     }
   };
 
+  // Fetch votes
   const fetchVotes = async () => {
     const { data } = await supabase
       .from("question_votes")
@@ -63,12 +67,14 @@ export default function HomePage() {
     }
   };
 
+  // Ask question
   const handleAskQuestion = async () => {
     if (!question.trim()) return;
 
     setPosting(true);
     setMessage("");
 
+    // Duplicate check
     const { data: existingQuestion } = await supabase
       .from("questions")
       .select("id")
@@ -81,6 +87,7 @@ export default function HomePage() {
       return;
     }
 
+    // Insert question
     const { error } = await supabase
       .from("questions")
       .insert([
@@ -100,49 +107,51 @@ export default function HomePage() {
     setPosting(false);
   };
 
+  // Vote handler
   const handleVote = async (
-  questionId: string,
-  value: number
-) => {
-  if (!user) return;
+    questionId: string,
+    value: number
+  ) => {
+    if (!user) return;
 
-  const { data: existingVote } = await supabase
-    .from("question_votes")
-    .select("*")
-    .eq("question_id", questionId)
-    .eq("user_id", user.id)
-    .maybeSingle();
+    const { data: existingVote } = await supabase
+      .from("question_votes")
+      .select("*")
+      .eq("question_id", questionId)
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-  // No existing vote
-  if (!existingVote) {
-    await supabase.from("question_votes").insert([
-      {
-        question_id: questionId,
-        user_id: user.id,
-        vote: value,
-      },
-    ]);
-  } else {
-    // Clicking same vote again removes vote
-    if (existingVote.vote === value) {
-      await supabase
-        .from("question_votes")
-        .delete()
-        .eq("id", existingVote.id);
-    } else {
-      // Switch vote
-      await supabase
-        .from("question_votes")
-        .update({
+    // No existing vote
+    if (!existingVote) {
+      await supabase.from("question_votes").insert([
+        {
+          question_id: questionId,
+          user_id: user.id,
           vote: value,
-        })
-        .eq("id", existingVote.id);
+        },
+      ]);
+    } else {
+      // Clicking same vote removes vote
+      if (existingVote.vote === value) {
+        await supabase
+          .from("question_votes")
+          .delete()
+          .eq("id", existingVote.id);
+      } else {
+        // Switch vote
+        await supabase
+          .from("question_votes")
+          .update({
+            vote: value,
+          })
+          .eq("id", existingVote.id);
+      }
     }
-  }
 
-  fetchVotes();
-};
+    fetchVotes();
+  };
 
+  // Loading state
   if (loading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -153,6 +162,7 @@ export default function HomePage() {
 
   return (
     <div className="max-w-3xl mx-auto p-6">
+      {/* Header */}
       <h1 className="text-4xl font-bold mb-2">
         Live Q&A
       </h1>
@@ -174,7 +184,7 @@ export default function HomePage() {
         <button
           onClick={handleAskQuestion}
           disabled={posting}
-          className="bg-blue-600 text-white px-6 rounded-lg"
+          className="bg-blue-600 text-white px-6 rounded-lg hover:bg-blue-700"
         >
           {posting ? "Posting..." : "Ask"}
         </button>
@@ -182,46 +192,53 @@ export default function HomePage() {
 
       {/* Message */}
       {message && (
-        <div className="mb-4 text-red-500">
+        <div className="mb-4 text-red-500 text-sm">
           {message}
         </div>
       )}
 
-      {/* Question */}
-<div className="flex-1 max-h-14 overflow-y-auto">
-  <p className="font-medium text-sm leading-5 break-words">
-    {q.question}
-  </p>
-</div>
-            {/* Vote Box */}
-<div className="flex flex-col items-center border rounded-md px-2 py-1 h-fit min-w-[42px]">
-  <button
-    onClick={() => handleVote(q.id, 1)}
-    className="text-sm hover:text-blue-600 leading-none"
-  >
-    ▲
-  </button>
-
-  <span className="text-sm font-bold my-1">
-    {Math.max(votes[q.id] || 0, 0)}
-  </span>
-
-  <button
-    onClick={() => handleVote(q.id, -1)}
-    className="text-sm hover:text-red-600 leading-none"
-  >
-    ▼
-  </button>
-</div>
-
-            {/* Question */}
-            <div className="flex-1">
-              <p className="font-medium">
-                {q.question}
-              </p>
-            </div>
+      {/* Questions */}
+      <div className="space-y-3">
+        {questions.length === 0 ? (
+          <div className="text-gray-500">
+            No questions yet — be the first to ask.
           </div>
-        ))}
+        ) : (
+          questions.map((q) => (
+            <div
+              key={q.id}
+              className="border rounded-lg p-3 bg-white shadow-sm flex gap-3 items-start"
+            >
+              {/* Vote Box */}
+              <div className="flex flex-col items-center border rounded-md px-2 py-1 h-fit min-w-[42px]">
+                <button
+                  onClick={() => handleVote(q.id, 1)}
+                  className="text-sm hover:text-blue-600 leading-none"
+                >
+                  ▲
+                </button>
+
+                <span className="text-sm font-bold my-1">
+                  {Math.max(votes[q.id] || 0, 0)}
+                </span>
+
+                <button
+                  onClick={() => handleVote(q.id, -1)}
+                  className="text-sm hover:text-red-600 leading-none"
+                >
+                  ▼
+                </button>
+              </div>
+
+              {/* Question */}
+              <div className="flex-1 max-h-14 overflow-y-auto">
+                <p className="font-medium text-sm leading-5 break-words">
+                  {q.question}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

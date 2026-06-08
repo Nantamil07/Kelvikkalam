@@ -27,7 +27,7 @@ export default function HomePage() {
 
   const [pins, setPins] = useState<string[]>([]);
 
-  // Poll states
+  // Poll States
   const [pollQuestion, setPollQuestion] =
     useState("");
 
@@ -36,7 +36,7 @@ export default function HomePage() {
 
   const [polls, setPolls] = useState<any[]>([]);
 
-  // Redirect if not logged in
+  // Redirect
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
@@ -53,7 +53,7 @@ export default function HomePage() {
     }
   }, [user]);
 
-  // Fetch questions
+  // Fetch Questions
   const fetchQuestions = async () => {
     const { data } = await supabase
       .from("questions")
@@ -67,7 +67,7 @@ export default function HomePage() {
     }
   };
 
-  // Fetch votes
+  // Fetch Votes
   const fetchVotes = async () => {
     const { data } = await supabase
       .from("question_votes")
@@ -90,11 +90,17 @@ export default function HomePage() {
     }
   };
 
-  // Fetch polls
+  // Fetch Polls
   const fetchPolls = async () => {
     const { data } = await supabase
       .from("polls")
-      .select("*")
+      .select(`
+        *,
+        poll_votes (
+          id,
+          selected_option
+        )
+      `)
       .order("created_at", {
         ascending: false,
       });
@@ -104,7 +110,7 @@ export default function HomePage() {
     }
   };
 
-  // Fetch pins
+  // Fetch Pins
   const fetchPins = async () => {
     if (!user) return;
 
@@ -128,7 +134,7 @@ export default function HomePage() {
     }
   };
 
-  // Improve question
+  // Improve Question
   const handleImproveQuestion =
     async () => {
       if (!question.trim()) return;
@@ -173,7 +179,7 @@ export default function HomePage() {
       setImproving(false);
     };
 
-  // Ask question
+  // Ask Question
   const handleAskQuestion =
     async () => {
       if (!question.trim()) return;
@@ -213,7 +219,6 @@ export default function HomePage() {
         const improvedQuestion =
           aiData.question.trim();
 
-        // Duplicate check
         const {
           data: existingQuestion,
         } = await supabase
@@ -234,7 +239,6 @@ export default function HomePage() {
           return;
         }
 
-        // Insert question
         const { error } =
           await supabase
             .from("questions")
@@ -263,7 +267,7 @@ export default function HomePage() {
       setPosting(false);
     };
 
-  // Vote
+  // Vote Question
   const handleVote = async (
     questionId: string,
     value: number
@@ -311,7 +315,7 @@ export default function HomePage() {
     fetchVotes();
   };
 
-  // Create poll
+  // Create Poll
   const handleCreatePoll =
     async () => {
       if (
@@ -339,7 +343,7 @@ export default function HomePage() {
       fetchPolls();
     };
 
-  // Poll vote
+  // Poll Vote
   const handlePollVote = async (
     pollId: string,
     option: string
@@ -356,21 +360,32 @@ export default function HomePage() {
       .maybeSingle();
 
     if (existingVote) {
+      if (
+        existingVote.selected_option ===
+        option
+      ) {
+        return;
+      }
+
       await supabase
         .from("poll_votes")
-        .delete()
+        .update({
+          selected_option: option,
+        })
         .eq("id", existingVote.id);
+    } else {
+      await supabase
+        .from("poll_votes")
+        .insert([
+          {
+            poll_id: pollId,
+            user_id: user.id,
+            selected_option: option,
+          },
+        ]);
     }
 
-    await supabase
-      .from("poll_votes")
-      .insert([
-        {
-          poll_id: pollId,
-          user_id: user.id,
-          selected_option: option,
-        },
-      ]);
+    fetchPolls();
   };
 
   // Pin / Unpin
@@ -431,6 +446,7 @@ export default function HomePage() {
 
       {/* Ask Question */}
       <div className="flex gap-2 mb-4">
+
         <input
           type="text"
           placeholder="Ask a question..."
@@ -464,10 +480,12 @@ export default function HomePage() {
             ? "Posting..."
             : "Ask"}
         </button>
+
       </div>
 
       {/* Search */}
       <div className="flex gap-2 mb-4">
+
         <input
           type="text"
           placeholder="Search questions..."
@@ -481,6 +499,7 @@ export default function HomePage() {
         <button className="bg-gray-700 text-white px-4 rounded-lg">
           Search
         </button>
+
       </div>
 
       {/* Message */}
@@ -538,6 +557,7 @@ export default function HomePage() {
 
               {/* Vote Box */}
               <div className="flex flex-col items-center border rounded-md px-2 py-1 h-fit min-w-[42px]">
+
                 <button
                   onClick={() =>
                     handleVote(q.id, 1)
@@ -562,6 +582,7 @@ export default function HomePage() {
                 >
                   ▼
                 </button>
+
               </div>
 
               {/* Question */}
@@ -590,9 +611,10 @@ export default function HomePage() {
                       "question-" +
                         q.id
                     )
-                      ? "Unpin"
+                      ? "Pinned"
                       : "Pin"}
                   </span>
+
                 </button>
 
               </div>
@@ -709,67 +731,152 @@ export default function HomePage() {
 
               return 0;
             })
-            .map((poll) => (
-              <div
-                key={poll.id}
-                className="border rounded-lg p-4"
-              >
+            .map((poll) => {
 
-                <div className="flex justify-between items-start gap-2 mb-3">
+              const pollVotes =
+                poll.poll_votes || [];
 
-                  <h3 className="font-bold flex-1">
-                    {poll.question}
-                  </h3>
+              const totalVotes =
+                pollVotes.length;
 
-                  {/* Pin */}
-                  <button
-                    onClick={() =>
-                      handlePin(
-                        poll.id,
-                        "poll"
-                      )
-                    }
-                    className="flex flex-col items-center border rounded-md px-2 py-1 min-w-[42px] text-xs hover:bg-gray-100"
-                  >
-                    📌
+              return (
+                <div
+                  key={poll.id}
+                  className="border rounded-lg p-4 bg-white shadow-sm"
+                >
 
-                    <span className="text-[10px]">
-                      {pins.includes(
-                        "poll-" +
-                          poll.id
-                      )
-                        ? "Unpin"
-                        : "Pin"}
-                    </span>
-                  </button>
+                  {/* Poll Header */}
+                  <div className="flex justify-between items-start gap-2 mb-4">
+
+                    <div className="flex items-center gap-2">
+
+                      {/* Total Votes */}
+                      <div className="border rounded-md px-2 py-1 text-xs font-bold min-w-[45px] text-center">
+                        {totalVotes}
+
+                        <div className="text-[10px] text-gray-500">
+                          votes
+                        </div>
+
+                      </div>
+
+                      {/* Poll Question */}
+                      <h3 className="font-bold text-sm">
+                        {poll.question}
+                      </h3>
+
+                    </div>
+
+                    {/* Pin */}
+                    <button
+                      onClick={() =>
+                        handlePin(
+                          poll.id,
+                          "poll"
+                        )
+                      }
+                      className="flex flex-col items-center border rounded-md px-2 py-1 min-w-[42px] text-xs hover:bg-gray-100"
+                    >
+                      📌
+
+                      <span className="text-[10px]">
+                        {pins.includes(
+                          "poll-" +
+                            poll.id
+                        )
+                          ? "Pinned"
+                          : "Pin"}
+                      </span>
+
+                    </button>
+
+                  </div>
+
+                  {/* Poll Options */}
+                  <div className="space-y-3">
+
+                    {poll.options.map(
+                      (
+                        option: string,
+                        index: number
+                      ) => {
+
+                        const optionVotes =
+                          pollVotes.filter(
+                            (
+                              vote: any
+                            ) =>
+                              vote.selected_option ===
+                              option
+                          ).length;
+
+                        const percentage =
+                          totalVotes === 0
+                            ? 0
+                            : Math.round(
+                                (optionVotes /
+                                  totalVotes) *
+                                  100
+                              );
+
+                        return (
+                          <button
+                            key={index}
+                            onClick={() =>
+                              handlePollVote(
+                                poll.id,
+                                option
+                              )
+                            }
+                            className="w-full border rounded-lg px-3 py-2 hover:bg-gray-50"
+                          >
+
+                            {/* Option Header */}
+                            <div className="flex justify-between items-center mb-1">
+
+                              <div className="flex items-center gap-2">
+
+                                {/* Vote Count */}
+                                <span className="text-xs font-bold min-w-[24px]">
+                                  {optionVotes}
+                                </span>
+
+                                {/* Option Text */}
+                                <span className="text-sm">
+                                  {option}
+                                </span>
+
+                              </div>
+
+                              {/* Percentage */}
+                              <span className="text-xs text-gray-500">
+                                {percentage}%
+                              </span>
+
+                            </div>
+
+                            {/* Progress Bar */}
+                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+
+                              <div
+                                className="h-full bg-blue-500 transition-all"
+                                style={{
+                                  width: `${percentage}%`,
+                                }}
+                              />
+
+                            </div>
+
+                          </button>
+                        );
+                      }
+                    )}
+
+                  </div>
 
                 </div>
-
-                {/* Poll Options */}
-                <div className="space-y-2">
-                  {poll.options.map(
-                    (
-                      option: string,
-                      index: number
-                    ) => (
-                      <button
-                        key={index}
-                        onClick={() =>
-                          handlePollVote(
-                            poll.id,
-                            option
-                          )
-                        }
-                        className="w-full border rounded-lg px-4 py-2 text-left hover:bg-gray-100"
-                      >
-                        {option}
-                      </button>
-                    )
-                  )}
-                </div>
-
-              </div>
-            ))}
+              );
+            })}
 
         </div>
 

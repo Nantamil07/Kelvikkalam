@@ -368,14 +368,14 @@ export default function HomePage() {
     };
 
   // Poll Vote
-  // One vote only per user
+  // One active vote per user
+  // Can switch between options
   const handlePollVote = async (
     pollId: string,
     option: string
   ) => {
     if (!user) return;
 
-    // Check existing vote
     const {
       data: existingVote,
     } = await supabase
@@ -385,30 +385,48 @@ export default function HomePage() {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    // Already voted
-    if (existingVote) {
-      setMessage(
-        "You already voted in this poll."
-      );
-
+    // Same option
+    if (
+      existingVote &&
+      existingVote.selected_option === option
+    ) {
       return;
     }
 
-    // First and only vote
-    const { error } = await supabase
-      .from("poll_votes")
-      .insert([
-        {
-          poll_id: pollId,
-          user_id: user.id,
-          selected_option: option,
-        },
-      ]);
+    // Change vote
+    if (existingVote) {
 
-    if (error) {
-      setMessage(error.message);
+      const { error } =
+        await supabase
+          .from("poll_votes")
+          .update({
+            selected_option: option,
+          })
+          .eq("id", existingVote.id);
 
-      return;
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
+
+    } else {
+
+      // First vote
+      const { error } =
+        await supabase
+          .from("poll_votes")
+          .insert([
+            {
+              poll_id: pollId,
+              user_id: user.id,
+              selected_option: option,
+            },
+          ]);
+
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
     }
 
     fetchPolls();
@@ -521,10 +539,6 @@ export default function HomePage() {
           }
           className="flex-1 border rounded-lg px-4 py-2"
         />
-
-        <button className="bg-gray-700 text-white px-4 rounded-lg">
-          Search
-        </button>
 
       </div>
 
@@ -864,17 +878,13 @@ export default function HomePage() {
                                 option
                               )
                             }
-                            disabled={
-                              !!userVote
-                            }
+
+                            disabled={false}
+
                             className={`w-full border rounded-lg px-3 py-2 transition-all ${
                               isSelected
                                 ? "border-blue-500 bg-blue-50"
                                 : "hover:bg-gray-50"
-                            } ${
-                              userVote
-                                ? "cursor-not-allowed"
-                                : ""
                             }`}
                           >
 

@@ -98,6 +98,7 @@ export default function HomePage() {
         *,
         poll_votes (
           id,
+          user_id,
           selected_option
         )
       `)
@@ -359,31 +360,43 @@ export default function HomePage() {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (existingVote) {
-      if (
-        existingVote.selected_option ===
-        option
-      ) {
-        return;
-      }
+    // Remove vote if same option clicked
+    if (
+      existingVote &&
+      existingVote.selected_option === option
+    ) {
+      await supabase
+        .from("poll_votes")
+        .delete()
+        .eq("id", existingVote.id);
 
+      fetchPolls();
+      return;
+    }
+
+    // Switch option
+    if (existingVote) {
       await supabase
         .from("poll_votes")
         .update({
           selected_option: option,
         })
         .eq("id", existingVote.id);
-    } else {
-      await supabase
-        .from("poll_votes")
-        .insert([
-          {
-            poll_id: pollId,
-            user_id: user.id,
-            selected_option: option,
-          },
-        ]);
+
+      fetchPolls();
+      return;
     }
+
+    // First vote
+    await supabase
+      .from("poll_votes")
+      .insert([
+        {
+          poll_id: pollId,
+          user_id: user.id,
+          selected_option: option,
+        },
+      ]);
 
     fetchPolls();
   };
@@ -739,6 +752,13 @@ export default function HomePage() {
               const totalVotes =
                 pollVotes.length;
 
+              const userVote =
+                pollVotes.find(
+                  (vote: any) =>
+                    vote.user_id ===
+                    user?.id
+                )?.selected_option;
+
               return (
                 <div
                   key={poll.id}
@@ -819,6 +839,9 @@ export default function HomePage() {
                                   100
                               );
 
+                        const isSelected =
+                          userVote === option;
+
                         return (
                           <button
                             key={index}
@@ -828,7 +851,11 @@ export default function HomePage() {
                                 option
                               )
                             }
-                            className="w-full border rounded-lg px-3 py-2 hover:bg-gray-50"
+                            className={`w-full border rounded-lg px-3 py-2 transition-all ${
+                              isSelected
+                                ? "border-blue-500 bg-blue-50"
+                                : "hover:bg-gray-50"
+                            }`}
                           >
 
                             {/* Option Header */}
@@ -840,6 +867,15 @@ export default function HomePage() {
                                 <span className="text-xs font-bold min-w-[24px]">
                                   {optionVotes}
                                 </span>
+
+                                {/* Selected Circle */}
+                                <div
+                                  className={`w-3 h-3 rounded-full border ${
+                                    isSelected
+                                      ? "bg-blue-500 border-blue-500"
+                                      : "border-gray-400"
+                                  }`}
+                                />
 
                                 {/* Option Text */}
                                 <span className="text-sm">

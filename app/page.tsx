@@ -367,17 +367,22 @@ export default function HomePage() {
       fetchPolls();
     };
 
-  // Poll Vote
-  // One active vote per user
-  // Can switch between options
-  const handlePollVote = async (
-    pollId: string,
-    option: string
-  ) => {
-    if (!user) return;
+// Poll Vote
+// One active vote per user
+// User can switch between options
 
+const handlePollVote = async (
+  pollId: string,
+  option: string
+) => {
+  if (!user) return;
+
+  try {
+
+    // CHECK EXISTING USER VOTE
     const {
       data: existingVote,
+      error: fetchError,
     } = await supabase
       .from("poll_votes")
       .select("*")
@@ -385,7 +390,14 @@ export default function HomePage() {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    // Same option
+    if (fetchError) {
+      console.log(fetchError);
+      setMessage(fetchError.message);
+      return;
+    }
+
+    // SAME OPTION CLICKED
+    // DO NOTHING
     if (
       existingVote &&
       existingVote.selected_option === option
@@ -393,26 +405,28 @@ export default function HomePage() {
       return;
     }
 
-    // Change vote
+    // CHANGE EXISTING VOTE
     if (existingVote) {
 
-      const { error } =
+      const { error: updateError } =
         await supabase
           .from("poll_votes")
           .update({
             selected_option: option,
           })
-          .eq("id", existingVote.id);
+          .eq("poll_id", pollId)
+          .eq("user_id", user.id);
 
-      if (error) {
-        setMessage(error.message);
+      if (updateError) {
+        console.log(updateError);
+        setMessage(updateError.message);
         return;
       }
 
     } else {
 
-      // First vote
-      const { error } =
+      // FIRST TIME VOTE
+      const { error: insertError } =
         await supabase
           .from("poll_votes")
           .insert([
@@ -423,14 +437,25 @@ export default function HomePage() {
             },
           ]);
 
-      if (error) {
-        setMessage(error.message);
+      if (insertError) {
+        console.log(insertError);
+        setMessage(insertError.message);
         return;
       }
     }
 
-    fetchPolls();
-  };
+    // REFRESH POLLS
+    await fetchPolls();
+
+  } catch (error) {
+
+    console.log(error);
+
+    setMessage(
+      "Failed to submit poll vote"
+    );
+  }
+};
 
   // Pin / Unpin
   const handlePin = async (

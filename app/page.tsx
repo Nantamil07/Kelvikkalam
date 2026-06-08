@@ -16,16 +16,31 @@ export default function HomePage() {
 
   const { user, loading } = useAuth();
 
-  const [question, setQuestion] = useState("");
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [votes, setVotes] = useState<Record<string, number>>({});
-  const [posting, setPosting] = useState(false);
-  const [improving, setImproving] = useState(false);
-  const [message, setMessage] = useState("");
+  const [question, setQuestion] =
+    useState("");
 
-  const [search, setSearch] = useState("");
+  const [questions, setQuestions] =
+    useState<Question[]>([]);
 
-  const [pins, setPins] = useState<string[]>([]);
+  const [votes, setVotes] = useState<
+    Record<string, number>
+  >({});
+
+  const [posting, setPosting] =
+    useState(false);
+
+  const [improving, setImproving] =
+    useState(false);
+
+  const [message, setMessage] =
+    useState("");
+
+  const [search, setSearch] =
+    useState("");
+
+  const [pins, setPins] = useState<
+    string[]
+  >([]);
 
   // Poll States
   const [pollQuestion, setPollQuestion] =
@@ -34,7 +49,9 @@ export default function HomePage() {
   const [pollOptions, setPollOptions] =
     useState(["", ""]);
 
-  const [polls, setPolls] = useState<any[]>([]);
+  const [polls, setPolls] = useState<
+    any[]
+  >([]);
 
   // Redirect
   useEffect(() => {
@@ -43,7 +60,7 @@ export default function HomePage() {
     }
   }, [user, loading, router]);
 
-  // Initial fetch
+  // Initial Fetch
   useEffect(() => {
     if (user) {
       fetchQuestions();
@@ -141,6 +158,7 @@ export default function HomePage() {
       if (!question.trim()) return;
 
       setImproving(true);
+
       setMessage("");
 
       try {
@@ -186,6 +204,7 @@ export default function HomePage() {
       if (!question.trim()) return;
 
       setPosting(true);
+
       setMessage("");
 
       try {
@@ -214,6 +233,7 @@ export default function HomePage() {
           );
 
           setPosting(false);
+
           return;
         }
 
@@ -237,6 +257,7 @@ export default function HomePage() {
           );
 
           setPosting(false);
+
           return;
         }
 
@@ -255,6 +276,7 @@ export default function HomePage() {
           setMessage(error.message);
         } else {
           setQuestion("");
+
           fetchQuestions();
         }
       } catch (error) {
@@ -339,18 +361,21 @@ export default function HomePage() {
         ]);
 
       setPollQuestion("");
+
       setPollOptions(["", ""]);
 
       fetchPolls();
     };
 
   // Poll Vote
+  // One vote only per user
   const handlePollVote = async (
     pollId: string,
     option: string
   ) => {
     if (!user) return;
 
+    // Check existing vote
     const {
       data: existingVote,
     } = await supabase
@@ -360,35 +385,17 @@ export default function HomePage() {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    // Remove vote if same option clicked
-    if (
-      existingVote &&
-      existingVote.selected_option === option
-    ) {
-      await supabase
-        .from("poll_votes")
-        .delete()
-        .eq("id", existingVote.id);
-
-      fetchPolls();
-      return;
-    }
-
-    // Switch option
+    // Already voted
     if (existingVote) {
-      await supabase
-        .from("poll_votes")
-        .update({
-          selected_option: option,
-        })
-        .eq("id", existingVote.id);
+      setMessage(
+        "You already voted in this poll."
+      );
 
-      fetchPolls();
       return;
     }
 
-    // First vote
-    await supabase
+    // First and only vote
+    const { error } = await supabase
       .from("poll_votes")
       .insert([
         {
@@ -397,6 +404,12 @@ export default function HomePage() {
           selected_option: option,
         },
       ]);
+
+    if (error) {
+      setMessage(error.message);
+
+      return;
+    }
 
     fetchPolls();
   };
@@ -851,10 +864,17 @@ export default function HomePage() {
                                 option
                               )
                             }
+                            disabled={
+                              !!userVote
+                            }
                             className={`w-full border rounded-lg px-3 py-2 transition-all ${
                               isSelected
                                 ? "border-blue-500 bg-blue-50"
                                 : "hover:bg-gray-50"
+                            } ${
+                              userVote
+                                ? "cursor-not-allowed"
+                                : ""
                             }`}
                           >
 

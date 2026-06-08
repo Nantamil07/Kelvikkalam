@@ -20,6 +20,7 @@ export default function HomePage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [votes, setVotes] = useState<Record<string, number>>({});
   const [posting, setPosting] = useState(false);
+  const [improving, setImproving] = useState(false);
   const [message, setMessage] = useState("");
 
   // Redirect if not logged in
@@ -60,14 +61,61 @@ export default function HomePage() {
 
       data.forEach((vote: any) => {
         mappedVotes[vote.question_id] =
-          (mappedVotes[vote.question_id] || 0) + vote.vote;
+          (mappedVotes[vote.question_id] || 0) +
+          vote.vote;
       });
 
       setVotes(mappedVotes);
     }
   };
 
-  // Ask question
+  // Improve Question Only
+  const handleImproveQuestion = async () => {
+    if (!question.trim()) return;
+
+    setImproving(true);
+    setMessage("");
+
+    try {
+      const response = await fetch(
+        "/api/improve-question",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            text: question,
+          }),
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!data.success) {
+        setMessage(
+          data.error ||
+            "Failed to improve question"
+        );
+      } else {
+        // Replace textbox text
+        setQuestion(data.question);
+      }
+
+    } catch (error) {
+      console.error(error);
+
+      setMessage(
+        "Failed to improve question"
+      );
+    }
+
+    setImproving(false);
+  };
+
+  // Ask Question
   const handleAskQuestion = async () => {
     if (!question.trim()) return;
 
@@ -75,7 +123,7 @@ export default function HomePage() {
     setMessage("");
 
     try {
-      // AI improve + validation
+      // AI improve first
       const aiResponse = await fetch(
         "/api/improve-question",
         {
@@ -93,7 +141,6 @@ export default function HomePage() {
       const aiData =
         await aiResponse.json();
 
-      // Invalid question
       if (!aiData.success) {
         setMessage(
           aiData.error ||
@@ -104,7 +151,6 @@ export default function HomePage() {
         return;
       }
 
-      // Improved question
       const improvedQuestion =
         aiData.question.trim();
 
@@ -126,16 +172,17 @@ export default function HomePage() {
         return;
       }
 
-      // Insert question
-      const { error } = await supabase
-        .from("questions")
-        .insert([
-          {
-            question:
-              improvedQuestion,
-            user_id: user?.id,
-          },
-        ]);
+      // Insert
+      const { error } =
+        await supabase
+          .from("questions")
+          .insert([
+            {
+              question:
+                improvedQuestion,
+              user_id: user?.id,
+            },
+          ]);
 
       if (error) {
         setMessage(error.message);
@@ -155,7 +202,7 @@ export default function HomePage() {
     setPosting(false);
   };
 
-  // Vote handler
+  // Vote
   const handleVote = async (
     questionId: string,
     value: number
@@ -170,7 +217,6 @@ export default function HomePage() {
         .eq("user_id", user.id)
         .maybeSingle();
 
-    // No existing vote
     if (!existingVote) {
       await supabase
         .from("question_votes")
@@ -183,7 +229,6 @@ export default function HomePage() {
           },
         ]);
     } else {
-      // Remove same vote
       if (
         existingVote.vote === value
       ) {
@@ -192,7 +237,6 @@ export default function HomePage() {
           .delete()
           .eq("id", existingVote.id);
       } else {
-        // Switch vote
         await supabase
           .from("question_votes")
           .update({
@@ -238,6 +282,20 @@ export default function HomePage() {
           className="flex-1 border rounded-lg px-4 py-3"
         />
 
+        {/* Improve Button */}
+        <button
+          onClick={
+            handleImproveQuestion
+          }
+          disabled={improving}
+          className="bg-yellow-500 text-white px-4 rounded-lg hover:bg-yellow-600"
+        >
+          {improving
+            ? "Improving..."
+            : "Improve"}
+        </button>
+
+        {/* Ask Button */}
         <button
           onClick={handleAskQuestion}
           disabled={posting}
